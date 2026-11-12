@@ -32,7 +32,7 @@ export default async function handler(req, res) {
         // Pick any model available on openrouter.ai/models
         // Free options: 'mistralai/mistral-7b-instruct' or 'meta-llama/llama-3-8b-instruct'
         // Good paid options: 'openai/gpt-4o' or 'anthropic/claude-3.5-sonnet'
-        model: 'mistralai/mistral-7b-instruct',
+        model: 'baidu/ernie-5.5-flash-preview:free',
         messages: [
           {
             role: 'system',
