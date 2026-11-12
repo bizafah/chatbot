@@ -3,41 +3,198 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Chatbot</title>
+  <title>ATS Resume Screener</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
 
-  <div class="chat-container">
-    <div class="chat-header">
-      <div class="avatar">🤖</div>
-      <div class="header-info">
-        <span class="bot-name">AI Assistant</span>
-        <span class="status">Online</span>
+  <!-- ══════════════════════════════════════════
+       HEADER
+  ══════════════════════════════════════════ -->
+  <header class="app-header">
+    <div class="header-inner">
+      <div class="logo">
+        <span class="logo-icon">🎯</span>
+        <span class="logo-text">ATS <strong>Screener</strong></span>
       </div>
+      <span class="header-sub">AI-Powered Resume Evaluation</span>
     </div>
+  </header>
 
-    <div class="chat-messages" id="chatMessages">
-      <div class="message bot">
-        <div class="bubble">Hey there! How can I help you today?</div>
+  <main class="app-main">
+
+    <!-- ══════════════════════════════════════════
+         LEFT PANEL — Job Configuration
+    ══════════════════════════════════════════ -->
+    <aside class="config-panel">
+      <h2 class="panel-title">⚙️ Job Configuration</h2>
+
+      <div class="form-group">
+        <label for="jobTitle">Job Title</label>
+        <input type="text" id="jobTitle" placeholder="e.g. Senior Frontend Developer" />
       </div>
-    </div>
 
-    <div class="chat-input-area">
-      <textarea
-        id="userInput"
-        placeholder="Type a message..."
-        rows="1"
-        autocomplete="off"
-      ></textarea>
-      <button id="sendBtn" onclick="sendMessage()">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
-          <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
-        </svg>
+      <div class="form-group">
+        <label for="jobDescription">
+          Job Description
+          <span class="label-hint">Paste the full JD here</span>
+        </label>
+        <textarea id="jobDescription" rows="8"
+          placeholder="Paste the job description here. Include responsibilities, required skills, qualifications, etc."></textarea>
+      </div>
+
+      <div class="form-group">
+        <label for="requiredSkills">
+          Required Skills
+          <span class="label-hint">Comma-separated</span>
+        </label>
+        <input type="text" id="requiredSkills"
+          placeholder="e.g. React, TypeScript, Node.js, REST APIs" />
+      </div>
+
+      <div class="form-group">
+        <label for="experienceYears">Minimum Experience (years)</label>
+        <input type="number" id="experienceYears" min="0" max="20" value="2" />
+      </div>
+
+      <div class="form-group">
+        <label for="passThreshold">
+          Pass Threshold
+          <span class="label-hint" id="thresholdDisplay">70%</span>
+        </label>
+        <input type="range" id="passThreshold" min="30" max="95" value="70" step="5" />
+        <div class="threshold-labels">
+          <span>30%</span>
+          <span>95%</span>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="additionalCriteria">Additional Criteria <span class="label-hint">Optional</span></label>
+        <textarea id="additionalCriteria" rows="3"
+          placeholder="e.g. Must have startup experience, remote-only, visa sponsorship not available..."></textarea>
+      </div>
+
+      <button class="btn-save-config" id="saveConfigBtn" onclick="saveConfig()">
+        ✅ Save Configuration
       </button>
-    </div>
-  </div>
+      <div class="config-saved-msg" id="configSavedMsg">Configuration saved!</div>
+    </aside>
 
+    <!-- ══════════════════════════════════════════
+         RIGHT PANEL — Upload + Results
+    ══════════════════════════════════════════ -->
+    <section class="main-panel">
+
+      <!-- Upload area -->
+      <div class="upload-section">
+        <h2 class="panel-title">📄 Upload Resume</h2>
+
+        <div class="drop-zone" id="dropZone"
+             ondragover="handleDragOver(event)"
+             ondragleave="handleDragLeave(event)"
+             ondrop="handleDrop(event)"
+             onclick="document.getElementById('fileInput').click()">
+          <div class="drop-icon">📂</div>
+          <p class="drop-text">Drag & drop a resume here</p>
+          <p class="drop-subtext">or click to browse — PDF or DOCX supported</p>
+          <input type="file" id="fileInput" accept=".pdf,.docx"
+                 style="display:none" onchange="handleFileSelect(event)" />
+        </div>
+
+        <div class="file-info" id="fileInfo" style="display:none">
+          <span class="file-icon">📎</span>
+          <span id="fileName"></span>
+          <button class="btn-remove-file" onclick="removeFile()" title="Remove file">✕</button>
+        </div>
+
+        <button class="btn-analyze" id="analyzeBtn" onclick="analyzeResume()" disabled>
+          <span id="analyzeBtnText">🔍 Analyze Resume</span>
+        </button>
+      </div>
+
+      <!-- Results area -->
+      <div class="results-section" id="resultsSection" style="display:none">
+        <h2 class="panel-title">📊 Analysis Results</h2>
+
+        <!-- Score card -->
+        <div class="score-card" id="scoreCard">
+          <div class="score-ring-wrapper">
+            <svg class="score-ring" viewBox="0 0 120 120">
+              <circle class="ring-bg"  cx="60" cy="60" r="52" />
+              <circle class="ring-fill" id="ringFill" cx="60" cy="60" r="52"
+                      stroke-dasharray="327" stroke-dashoffset="327" />
+            </svg>
+            <div class="score-center">
+              <span class="score-number" id="scoreNumber">0</span>
+              <span class="score-pct">%</span>
+            </div>
+          </div>
+
+          <div class="score-info">
+            <div class="verdict" id="verdict"></div>
+            <div class="verdict-sub" id="verdictSub"></div>
+            <div class="candidate-name-row" id="candidateNameRow" style="display:none">
+              <span class="label-sm">Candidate:</span>
+              <span class="candidate-name" id="candidateName"></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Breakdown -->
+        <div class="breakdown-grid" id="breakdownGrid"></div>
+
+        <!-- Detailed feedback -->
+        <div class="feedback-block">
+          <h3 class="feedback-title">💬 Detailed Feedback</h3>
+          <div class="feedback-content" id="feedbackContent"></div>
+        </div>
+
+        <!-- Strengths / Gaps -->
+        <div class="two-col">
+          <div class="strengths-block">
+            <h3>✅ Strengths</h3>
+            <ul id="strengthsList"></ul>
+          </div>
+          <div class="gaps-block">
+            <h3>⚠️ Gaps / Missing</h3>
+            <ul id="gapsList"></ul>
+          </div>
+        </div>
+
+        <!-- Recommendation -->
+        <div class="recommendation-block" id="recommendationBlock"></div>
+
+        <!-- New analysis button -->
+        <button class="btn-new" onclick="resetResults()">🔄 Analyze Another Resume</button>
+      </div>
+
+      <!-- Loading state -->
+      <div class="loading-state" id="loadingState" style="display:none">
+        <div class="spinner"></div>
+        <p class="loading-text">Analyzing resume with AI...</p>
+        <p class="loading-sub">This usually takes 5–15 seconds</p>
+      </div>
+
+    </section>
+  </main>
+
+  <!-- ── History sidebar (bottom) ─────────────────── -->
+  <section class="history-section" id="historySection" style="display:none">
+    <div class="history-header">
+      <h2 class="panel-title">🗂️ Screening History</h2>
+      <button class="btn-clear-history" onclick="clearHistory()">Clear All</button>
+    </div>
+    <div class="history-grid" id="historyGrid"></div>
+  </section>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script>
+    // Set pdf.js worker path
+    pdfjsLib.GlobalWorkerOptions.workerSrc =
+      'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  </script>
   <script src="script.js"></script>
 </body>
 </html>

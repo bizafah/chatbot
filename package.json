@@ -1,0 +1,9 @@
+{
+  "name": "ats-resume-screener",
+  "version": "1.0.0",
+  "private": true,
+  "description": "AI-powered ATS resume screener using OpenRouter",
+  "engines": {
+    "node": ">=18"
+  }
+}
